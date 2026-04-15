@@ -10,6 +10,7 @@ venv/
 
 # YOLO weights (large files)
 *.pt
+!yolov8n.pt
 
 # OS
 .DS_Store
