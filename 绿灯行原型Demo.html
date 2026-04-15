@@ -1162,6 +1162,24 @@
     }
   }, { passive: false });
 
+  // ===== Demo mode: URL parameter ?demo=green|red|yellow|settings =====
+  var params = new URLSearchParams(window.location.search);
+  var demoMode = params.get('demo');
+  if (demoMode) {
+    onboardPage.classList.add('hidden');
+    mainPage.classList.remove('hidden');
+    if (demoMode === 'settings') {
+      setTimeout(function() {
+        settingsOverlay.classList.add('show');
+        settingsOverlay.setAttribute('aria-hidden', 'false');
+      }, 300);
+    } else {
+      setTimeout(function() {
+        showResult(demoMode, true);
+      }, 300);
+    }
+  }
+
 })();
 </script>
 

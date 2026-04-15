@@ -1016,8 +1016,12 @@
   var MAX_AUTO_LOOPS = 10;
   var KEYBOARD_RESET_DELAY = 3000;
   var SCAN_INTERVAL = 2000;       // Capture and send every 2 seconds
-  var API_TIMEOUT = 3000;         // 3 second timeout for API calls
+  var API_TIMEOUT = 5000;         // 5 second timeout for API calls
   var CONFIDENCE_THRESHOLD = 0.3; // Minimum confidence for normal report
+
+  // API地址配置：前后端同域部署用相对路径，分离部署改为后端URL
+  // 例如：var API_BASE = 'https://your-backend.onrender.com';
+  var API_BASE = '';
 
   // ===== DOM Elements =====
   var onboardPage = document.getElementById('onboardPage');
@@ -1146,9 +1150,35 @@
     return dataURL.replace(/^data:image\/jpeg;base64,/, '');
   }
 
-  // ===== Send Frame to API =====
+  // ===== Send Frame to API (or simulate in demo mode) =====
   function sendToAPI(base64Data) {
     if (state.isRequestInProgress) return;
+
+    // Demo mode: simulate recognition result
+    if (state.demoMode) {
+      state.isRequestInProgress = true;
+      // Simulate network delay (800-1500ms)
+      var delay = 800 + Math.random() * 700;
+      setTimeout(function() {
+        state.isRequestInProgress = false;
+        if (!state.isPressed) return;
+
+        // 80% high confidence, 20% low confidence
+        var isHighConfidence = Math.random() < 0.8;
+        var result;
+        if (!isHighConfidence) {
+          result = { detected: true, color: 'unknown', confidence: 0.15 };
+        } else {
+          var rand = Math.random();
+          if (rand < 0.45) result = { detected: true, color: 'green', confidence: 0.85 };
+          else if (rand < 0.75) result = { detected: true, color: 'red', confidence: 0.82 };
+          else result = { detected: true, color: 'yellow', confidence: 0.78 };
+        }
+        handleAPIResult(result);
+      }, delay);
+      return;
+    }
+
     state.isRequestInProgress = true;
 
     var controller = new AbortController();
@@ -1156,7 +1186,7 @@
       controller.abort();
     }, API_TIMEOUT);
 
-    fetch('/api/detect', {
+    fetch(API_BASE + '/api/detect', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -1182,11 +1212,23 @@
         showToast('识别超时，请重试', 'warning');
         statusText.textContent = '识别超时';
         statusSub.textContent = '请检查网络后重试';
+        speak('识别超时，请重试');
       } else {
-        // Network error
-        showToast('连接服务器失败，请检查网络', 'error');
-        statusText.textContent = '连接失败';
-        statusSub.textContent = '请检查网络连接';
+        // Network error or server not available
+        showToast('无法连接识别服务', 'error');
+        statusText.textContent = '无法识别';
+        statusSub.textContent = '识别服务不可用';
+        speak('无法识别，请检查网络或服务');
+
+        // Show gray result state
+        btnWrapper.classList.remove('pressing', 'scanning');
+        btnWrapper.classList.add('result-gray');
+        mainBtn.textContent = '无法确认';
+        cameraScanOverlay.classList.remove('active');
+
+        if (state.vibrateEnabled && navigator.vibrate) {
+          navigator.vibrate([50, 50, 50, 50, 50]);
+        }
       }
 
       // If auto mode is on and still pressed, schedule next attempt

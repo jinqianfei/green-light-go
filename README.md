@@ -37,6 +37,10 @@ python server.py
 - 电脑浏览器：http://localhost:5000
 - 手机浏览器：http://电脑IP:5000（需同一WiFi）
 
+> 如果你要分享给他人，推荐使用 Render 云端部署。项目已包含 `render.yaml`、`Procfile` 和 `runtime.txt`，可直接连接 GitHub 仓库一键上线。
+
+> 同域名部署模式：前端和后端在同一个服务里运行，页面会直接调用当前域名下的 `/api/detect`，无需额外配置。
+
 ### 4. 使用方法
 
 1. 打开页面后，先看3步引导

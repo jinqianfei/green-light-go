@@ -1,15 +1,30 @@
-# GitHub 上用 Git LFS 管理模型文件
-# 临时忽略本地模型
-yolov8n.pt
-*.pt
-
 # Python
 __pycache__/
-*.pyc
-*.pyo
-*.egg-info/
-dist/
-build/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
 
-# Mac
+# YOLO weights (large files)
+*.pt
+!yolov8n.pt
+
+# OS
 .DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs
+*.log
+
+# Temp files
+*.tmp
+*.temp
