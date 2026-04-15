@@ -1,0 +1,1169 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>绿灯行 - 红绿灯识别助手</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <style>
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: #0f0f1a;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    overflow: hidden;
+  }
+
+  /* ===== iPhone Frame ===== */
+  .phone-frame {
+    width: 390px;
+    height: 844px;
+    background: #000;
+    border-radius: 50px;
+    padding: 12px;
+    position: relative;
+    box-shadow:
+      0 0 0 2px #333,
+      0 0 0 4px #1a1a1a,
+      0 30px 80px rgba(0,0,0,0.8),
+      inset 0 0 0 2px #222;
+  }
+
+  .phone-screen {
+    width: 100%;
+    height: 100%;
+    border-radius: 40px;
+    overflow: hidden;
+    position: relative;
+    background: #1a1a2e;
+  }
+
+  /* Dynamic Island */
+  .dynamic-island {
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 126px;
+    height: 36px;
+    background: #000;
+    border-radius: 20px;
+    z-index: 100;
+  }
+
+  /* Status Bar */
+  .status-bar {
+    height: 54px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    padding: 0 28px 6px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #fff;
+    position: relative;
+    z-index: 50;
+  }
+
+  /* Home Indicator */
+  .home-indicator {
+    position: absolute;
+    bottom: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 134px;
+    height: 5px;
+    background: rgba(255,255,255,0.3);
+    border-radius: 3px;
+    z-index: 100;
+  }
+
+  /* ===== Pages ===== */
+  .page {
+    position: absolute;
+    inset: 0;
+    transition: opacity 0.4s ease, transform 0.4s ease;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .page.hidden {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateX(30px);
+  }
+
+  /* ===== Onboarding Page ===== */
+  .onboard-page {
+    background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+    padding: 0 24px;
+  }
+
+  .onboard-header {
+    padding-top: 70px;
+    text-align: center;
+  }
+
+  .onboard-header h1 {
+    font-size: 36px;
+    font-weight: 900;
+    color: #fff;
+    letter-spacing: 4px;
+  }
+
+  .onboard-header .subtitle {
+    font-size: 14px;
+    color: rgba(255,255,255,0.5);
+    margin-top: 8px;
+  }
+
+  .onboard-steps {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 32px;
+    padding: 20px 0;
+  }
+
+  .onboard-step {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    width: 100%;
+    max-width: 320px;
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeInUp 0.6s ease forwards;
+  }
+
+  .onboard-step:nth-child(1) { animation-delay: 0.2s; }
+  .onboard-step:nth-child(2) { animation-delay: 0.5s; }
+  .onboard-step:nth-child(3) { animation-delay: 0.8s; }
+
+  @keyframes fadeInUp {
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .step-icon {
+    width: 72px;
+    height: 72px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 32px;
+  }
+
+  .step-icon.step1 { background: linear-gradient(135deg, #00d26a22, #00d26a44); border: 1px solid #00d26a55; }
+  .step-icon.step2 { background: linear-gradient(135deg, #4a90d922, #4a90d944); border: 1px solid #4a90d955; }
+  .step-icon.step3 { background: linear-gradient(135deg, #ffa50222, #ffa50244); border: 1px solid #ffa50255; }
+
+  .step-text {
+    flex: 1;
+  }
+
+  .step-text .step-num {
+    font-size: 12px;
+    color: rgba(255,255,255,0.4);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+  }
+
+  .step-text .step-desc {
+    font-size: 18px;
+    color: #fff;
+    font-weight: 700;
+    margin-top: 4px;
+    line-height: 1.4;
+  }
+
+  .onboard-footer {
+    padding-bottom: 40px;
+    text-align: center;
+  }
+
+  .disclaimer {
+    font-size: 12px;
+    color: rgba(255,255,255,0.35);
+    margin-bottom: 24px;
+    line-height: 1.6;
+    padding: 0 16px;
+  }
+
+  .start-btn {
+    width: 100%;
+    max-width: 320px;
+    height: 56px;
+    border: none;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #00d26a, #00b85c);
+    color: #fff;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 8px 32px rgba(0,210,106,0.3);
+  }
+
+  .start-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 40px rgba(0,210,106,0.4); }
+  .start-btn:active { transform: translateY(0); }
+
+  /* ===== Main Page ===== */
+  .main-page {
+    background: #1a1a2e;
+    padding: 0 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .main-header {
+    padding-top: 70px;
+    text-align: center;
+    width: 100%;
+  }
+
+  .main-header h1 {
+    font-size: 32px;
+    font-weight: 900;
+    color: #fff;
+    letter-spacing: 6px;
+  }
+
+  .main-header .tagline {
+    font-size: 13px;
+    color: rgba(255,255,255,0.4);
+    margin-top: 4px;
+  }
+
+  /* Central Button Area */
+  .button-area {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    position: relative;
+  }
+
+  .main-btn-wrapper {
+    position: relative;
+    width: 240px;
+    height: 240px;
+  }
+
+  .main-btn-ring {
+    position: absolute;
+    inset: -8px;
+    border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.06);
+    transition: all 0.4s ease;
+  }
+
+  .main-btn-ring-outer {
+    position: absolute;
+    inset: -20px;
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.03);
+    transition: all 0.4s ease;
+  }
+
+  .main-btn {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    border: none;
+    background: #2a2a3e;
+    color: rgba(255,255,255,0.7);
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    cursor: pointer;
+    position: relative;
+    z-index: 2;
+    transition: all 0.4s ease;
+    box-shadow:
+      0 4px 20px rgba(0,0,0,0.3),
+      inset 0 1px 0 rgba(255,255,255,0.05);
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: none;
+  }
+
+  .main-btn:focus-visible {
+    outline: 3px solid #00d26a;
+    outline-offset: 4px;
+  }
+
+  /* Pressing state */
+  .main-btn-wrapper.pressing .main-btn {
+    background: #33334d;
+    color: rgba(255,255,255,0.9);
+    box-shadow:
+      0 0 40px rgba(0,210,106,0.15),
+      0 0 80px rgba(0,210,106,0.08),
+      inset 0 1px 0 rgba(255,255,255,0.08);
+  }
+
+  .main-btn-wrapper.pressing .main-btn-ring {
+    border-color: rgba(0,210,106,0.3);
+    box-shadow: 0 0 20px rgba(0,210,106,0.1);
+  }
+
+  /* Scanning animation */
+  .main-btn-wrapper.scanning .main-btn-ring {
+    border-color: rgba(0,210,106,0.5);
+    animation: ringPulse 1.2s ease-in-out infinite;
+  }
+
+  .main-btn-wrapper.scanning .main-btn-ring-outer {
+    border-color: rgba(0,210,106,0.2);
+    animation: ringPulse 1.2s ease-in-out infinite 0.3s;
+  }
+
+  @keyframes ringPulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.06); opacity: 0.5; }
+  }
+
+  /* Scanning dots animation */
+  .scan-dots {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    z-index: 3;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .main-btn-wrapper.scanning .scan-dots {
+    opacity: 1;
+  }
+
+  .scan-dot {
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    background: #00d26a;
+    border-radius: 50%;
+    animation: scanDotMove 2s linear infinite;
+  }
+
+  .scan-dot:nth-child(1) { animation-delay: 0s; }
+  .scan-dot:nth-child(2) { animation-delay: 0.5s; }
+  .scan-dot:nth-child(3) { animation-delay: 1s; }
+  .scan-dot:nth-child(4) { animation-delay: 1.5s; }
+
+  @keyframes scanDotMove {
+    0% { top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0); opacity: 0; }
+    20% { opacity: 1; }
+    80% { opacity: 1; }
+    100% { top: 10%; left: 50%; transform: translate(-50%, -50%) scale(1.5); opacity: 0; }
+  }
+
+  /* Result states */
+  .main-btn-wrapper.result-green .main-btn {
+    background: linear-gradient(135deg, #00d26a, #00b85c);
+    color: #fff;
+    box-shadow:
+      0 0 60px rgba(0,210,106,0.4),
+      0 0 120px rgba(0,210,106,0.15),
+      inset 0 1px 0 rgba(255,255,255,0.2);
+  }
+  .main-btn-wrapper.result-green .main-btn-ring {
+    border-color: rgba(0,210,106,0.5);
+    box-shadow: 0 0 30px rgba(0,210,106,0.2);
+  }
+
+  .main-btn-wrapper.result-red .main-btn {
+    background: linear-gradient(135deg, #ff4757, #e84141);
+    color: #fff;
+    box-shadow:
+      0 0 60px rgba(255,71,87,0.4),
+      0 0 120px rgba(255,71,87,0.15),
+      inset 0 1px 0 rgba(255,255,255,0.2);
+  }
+  .main-btn-wrapper.result-red .main-btn-ring {
+    border-color: rgba(255,71,87,0.5);
+    box-shadow: 0 0 30px rgba(255,71,87,0.2);
+  }
+
+  .main-btn-wrapper.result-yellow .main-btn {
+    background: linear-gradient(135deg, #ffa502, #e89400);
+    color: #fff;
+    box-shadow:
+      0 0 60px rgba(255,165,2,0.4),
+      0 0 120px rgba(255,165,2,0.15),
+      inset 0 1px 0 rgba(255,255,255,0.2);
+  }
+  .main-btn-wrapper.result-yellow .main-btn-ring {
+    border-color: rgba(255,165,2,0.5);
+    box-shadow: 0 0 30px rgba(255,165,2,0.2);
+  }
+
+  .main-btn-wrapper.result-gray .main-btn {
+    background: linear-gradient(135deg, #555570, #44445a);
+    color: rgba(255,255,255,0.8);
+    box-shadow:
+      0 0 40px rgba(100,100,140,0.2),
+      inset 0 1px 0 rgba(255,255,255,0.1);
+  }
+  .main-btn-wrapper.result-gray .main-btn-ring {
+    border-color: rgba(150,150,180,0.3);
+  }
+
+  /* Traffic light icon inside button */
+  .traffic-light-icon {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -70%);
+    opacity: 0.15;
+    transition: opacity 0.3s;
+    pointer-events: none;
+  }
+
+  .main-btn-wrapper.scanning .traffic-light-icon,
+  .main-btn-wrapper.result-green .traffic-light-icon,
+  .main-btn-wrapper.result-red .traffic-light-icon,
+  .main-btn-wrapper.result-yellow .traffic-light-icon {
+    opacity: 0.25;
+  }
+
+  /* Status Area */
+  .status-area {
+    width: 100%;
+    padding-bottom: 50px;
+    text-align: center;
+    min-height: 120px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .status-text {
+    font-size: 24px;
+    font-weight: 700;
+    color: #fff;
+    min-height: 36px;
+    transition: all 0.3s ease;
+  }
+
+  .status-sub {
+    font-size: 15px;
+    color: rgba(255,255,255,0.4);
+    margin-top: 8px;
+    min-height: 22px;
+  }
+
+  /* Settings Icon */
+  .settings-btn {
+    position: absolute;
+    bottom: 50px;
+    right: 20px;
+    width: 44px;
+    height: 44px;
+    border: none;
+    background: rgba(255,255,255,0.06);
+    border-radius: 12px;
+    color: rgba(255,255,255,0.3);
+    font-size: 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s;
+    z-index: 10;
+  }
+
+  .settings-btn:hover {
+    background: rgba(255,255,255,0.1);
+    color: rgba(255,255,255,0.6);
+  }
+
+  .settings-btn:focus-visible {
+    outline: 2px solid #00d26a;
+    outline-offset: 2px;
+  }
+
+  /* ===== Settings Panel ===== */
+  .settings-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 200;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+  }
+
+  .settings-overlay.show {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .settings-panel {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #252540;
+    border-radius: 24px 24px 0 0;
+    padding: 20px 24px 40px;
+    z-index: 201;
+    transform: translateY(100%);
+    transition: transform 0.35s ease;
+  }
+
+  .settings-overlay.show .settings-panel {
+    transform: translateY(0);
+  }
+
+  .settings-handle {
+    width: 36px;
+    height: 4px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 2px;
+    margin: 0 auto 20px;
+  }
+
+  .settings-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 20px;
+  }
+
+  .setting-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .setting-label {
+    font-size: 16px;
+    color: rgba(255,255,255,0.8);
+  }
+
+  .setting-desc {
+    font-size: 12px;
+    color: rgba(255,255,255,0.35);
+    margin-top: 2px;
+  }
+
+  /* Toggle switch */
+  .toggle {
+    width: 50px;
+    height: 28px;
+    background: #3a3a55;
+    border-radius: 14px;
+    position: relative;
+    cursor: pointer;
+    transition: background 0.3s;
+    border: none;
+    padding: 0;
+  }
+
+  .toggle.on { background: #00d26a; }
+
+  .toggle::after {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 22px;
+    height: 22px;
+    background: #fff;
+    border-radius: 50%;
+    transition: transform 0.3s;
+  }
+
+  .toggle.on::after { transform: translateX(22px); }
+
+  /* ===== Responsive ===== */
+  @media (max-width: 420px) {
+    .phone-frame {
+      width: 100vw;
+      height: 100vh;
+      border-radius: 0;
+      padding: 0;
+      box-shadow: none;
+    }
+    .phone-screen { border-radius: 0; }
+    .dynamic-island { display: none; }
+    .status-bar { padding-top: 10px; height: 44px; }
+  }
+
+  /* ===== Animations ===== */
+  @keyframes breathe {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+  }
+
+  .main-btn-wrapper:not(.pressing):not(.scanning):not(.result-green):not(.result-red):not(.result-yellow):not(.result-gray) .main-btn {
+    animation: breathe 3s ease-in-out infinite;
+  }
+
+  /* Ripple effect */
+  .ripple {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.15);
+    transform: scale(0);
+    animation: rippleAnim 0.6s ease-out;
+    pointer-events: none;
+  }
+
+  @keyframes rippleAnim {
+    to { transform: scale(4); opacity: 0; }
+  }
+</style>
+</head>
+<body>
+
+<div class="phone-frame">
+  <div class="phone-screen" id="phoneScreen">
+
+    <!-- Dynamic Island -->
+    <div class="dynamic-island"></div>
+
+    <!-- Status Bar -->
+    <div class="status-bar">
+      <span>9:41</span>
+      <span style="display:flex;gap:6px;align-items:center;">
+        <svg width="16" height="12" viewBox="0 0 16 12" fill="white"><rect x="0" y="5" width="3" height="7" rx="1" opacity="0.4"/><rect x="4.5" y="3" width="3" height="9" rx="1" opacity="0.6"/><rect x="9" y="1" width="3" height="11" rx="1" opacity="0.8"/><rect x="13.5" y="0" width="2.5" height="12" rx="1"/></svg>
+        <svg width="16" height="12" viewBox="0 0 16 12" fill="white"><path d="M8 2C5.5 2 3.2 3 1.5 4.7L0 3.2C2.1 1.2 4.9 0 8 0s5.9 1.2 8 3.2l-1.5 1.5C12.8 3 10.5 2 8 2z" opacity="0.5"/><path d="M8 5C6.3 5 4.8 5.7 3.7 6.8L2.2 5.3C3.7 3.8 5.7 3 8 3s4.3.8 5.8 2.3l-1.5 1.5C11.2 5.7 9.7 5 8 5z" opacity="0.75"/><circle cx="8" cy="10" r="2"/></svg>
+        <svg width="27" height="13" viewBox="0 0 27 13" fill="none"><rect x="0.5" y="0.5" width="23" height="12" rx="3" stroke="white" stroke-opacity="0.35"/><rect x="25" y="4" width="2" height="5" rx="1" fill="white" fill-opacity="0.4"/><rect x="2" y="2" width="18" height="9" rx="1.5" fill="#00d26a"/></svg>
+      </span>
+    </div>
+
+    <!-- ===== Onboarding Page ===== -->
+    <div class="page onboard-page" id="onboardPage">
+      <div class="onboard-header">
+        <h1>绿灯行</h1>
+        <p class="subtitle">红绿灯智能识别助手</p>
+      </div>
+
+      <div class="onboard-steps">
+        <div class="onboard-step" role="listitem" aria-label="第一步：对准红绿灯">
+          <div class="step-icon step1" aria-hidden="true">
+            <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+              <rect x="4" y="2" width="28" height="32" rx="4" stroke="#00d26a" stroke-width="2" fill="none"/>
+              <circle cx="18" cy="10" r="4" fill="#ff4757" opacity="0.8"/>
+              <circle cx="18" cy="20" r="4" fill="#ffa502" opacity="0.8"/>
+              <circle cx="18" cy="30" r="4" fill="#00d26a" opacity="0.8"/>
+              <path d="M30 18 L34 18" stroke="#00d26a" stroke-width="2" stroke-linecap="round"/>
+              <path d="M32 15 L32 21" stroke="#00d26a" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="step-text">
+            <div class="step-num">STEP 1</div>
+            <div class="step-desc">将手机对准前方红绿灯</div>
+          </div>
+        </div>
+
+        <div class="onboard-step" role="listitem" aria-label="第二步：按住识别按钮">
+          <div class="step-icon step2" aria-hidden="true">
+            <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+              <circle cx="18" cy="18" r="14" stroke="#4a90d9" stroke-width="2" fill="none"/>
+              <circle cx="18" cy="18" r="10" stroke="#4a90d9" stroke-width="1.5" fill="none" stroke-dasharray="4 3"/>
+              <!-- Finger pressing -->
+              <path d="M14 28 C14 28 13 22 14 18 C15 14 17 12 18 12 C19 12 21 14 22 18 C23 22 22 28 22 28" fill="#4a90d9" opacity="0.6"/>
+              <circle cx="18" cy="11" r="3" fill="#4a90d9" opacity="0.8"/>
+            </svg>
+          </div>
+          <div class="step-text">
+            <div class="step-num">STEP 2</div>
+            <div class="step-desc">按住屏幕中央大按钮</div>
+          </div>
+        </div>
+
+        <div class="onboard-step" role="listitem" aria-label="第三步：听语音提示">
+          <div class="step-icon step3" aria-hidden="true">
+            <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+              <!-- Speaker -->
+              <path d="M8 14 L14 14 L20 9 L20 27 L14 22 L8 22 Z" fill="#ffa502" opacity="0.8"/>
+              <!-- Sound waves -->
+              <path d="M24 12 C26 14 27 17 27 18 C27 19 26 22 24 24" stroke="#ffa502" stroke-width="2" stroke-linecap="round" fill="none"/>
+              <path d="M28 8 C31 11 33 15 33 18 C33 21 31 25 28 28" stroke="#ffa502" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.5"/>
+            </svg>
+          </div>
+          <div class="step-text">
+            <div class="step-num">STEP 3</div>
+            <div class="step-desc">听语音播报，安全通行</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="onboard-footer">
+        <p class="disclaimer">本工具仅辅助判断，请结合实际环境确认安全</p>
+        <button class="start-btn" id="startBtn" role="button" aria-label="开始使用绿灯行" tabindex="0">
+          开始使用
+        </button>
+      </div>
+    </div>
+
+    <!-- ===== Main Page ===== -->
+    <div class="page main-page hidden" id="mainPage">
+      <div class="main-header">
+        <h1>绿灯行</h1>
+        <p class="tagline">红绿灯智能识别</p>
+      </div>
+
+      <div class="button-area">
+        <div class="main-btn-wrapper" id="btnWrapper">
+          <div class="main-btn-ring-outer"></div>
+          <div class="main-btn-ring"></div>
+          <div class="scan-dots">
+            <div class="scan-dot"></div>
+            <div class="scan-dot"></div>
+            <div class="scan-dot"></div>
+            <div class="scan-dot"></div>
+          </div>
+          <button
+            class="main-btn"
+            id="mainBtn"
+            role="button"
+            aria-label="按住此按钮识别红绿灯状态"
+            tabindex="0"
+          >按住识别</button>
+          <!-- Decorative traffic light icon -->
+          <svg class="traffic-light-icon" width="60" height="60" viewBox="0 0 60 60" fill="none" aria-hidden="true">
+            <rect x="20" y="5" width="20" height="50" rx="6" stroke="white" stroke-width="1.5" fill="none"/>
+            <circle cx="30" cy="16" r="5" fill="white"/>
+            <circle cx="30" cy="30" r="5" fill="white"/>
+            <circle cx="30" cy="44" r="5" fill="white"/>
+          </svg>
+        </div>
+      </div>
+
+      <div class="status-area">
+        <div class="status-text" id="statusText" aria-live="polite" role="status">准备就绪</div>
+        <div class="status-sub" id="statusSub">按住按钮开始识别</div>
+      </div>
+
+      <button class="settings-btn" id="settingsBtn" aria-label="打开设置" tabindex="0">
+        <svg width="22" height="22" viewBox="0 0 22 22" fill="currentColor">
+          <path d="M11 14a3 3 0 100-6 3 3 0 000 6z"/>
+          <path fill-rule="evenodd" d="M9.34 2.04a1 1 0 011.32 0l.64.53a1 1 0 00.9.18l.82-.2a1 1 0 011.12.52l.4.73a1 1 0 00.68.56l.84.16a1 1 0 01.8 1l.06.86a1 1 0 00.4.8l.62.58a1 1 0 01.06 1.4l-.56.66a1 1 0 00-.2.9l.2.82a1 1 0 01-.52 1.12l-.73.4a1 1 0 00-.56.68l-.16.84a1 1 0 01-1 .8l-.86.06a1 1 0 00-.8.4l-.58.62a1 1 0 01-1.4.06l-.66-.56a1 1 0 00-.9-.2l-.82.2a1 1 0 01-1.12-.52l-.4-.73a1 1 0 00-.68-.56l-.84-.16a1 1 0 01-.8-1l-.06-.86a1 1 0 00-.4-.8l-.62-.58a1 1 0 01-.06-1.4l.56-.66a1 1 0 00.2-.9l-.2-.82a1 1 0 01.52-1.12l.73-.4a1 1 0 00.56-.68l.16-.84a1 1 0 011-.8l.86-.06a1 1 0 00.8-.4l.58-.62a1 1 0 011.4-.06l.66.56a1 1 0 00.9.2l.82-.2a1 1 0 011.12.52l.4.73a1 1 0 00.68.56l.84.16a1 1 0 01.8 1l.06.86a1 1 0 00.4.8l.62.58a1 1 0 01.06 1.4l-.56.66a1 1 0 00-.2.9l.2.82a1 1 0 01-.52 1.12l-.73.4a1 1 0 00-.56.68l-.16.84a1 1 0 01-1 .8l-.86.06a1 1 0 00-.8.4l-.58.62a1 1 0 01-1.4.06l-.66-.56a1 1 0 00-.9-.2l-.82.2a1 1 0 01-1.12-.52l-.4-.73a1 1 0 00-.68-.56l-.84-.16a1 1 0 01-.8-1l-.06-.86a1 1 0 00-.4-.8l-.62-.58a1 1 0 01-.06-1.4l.56-.66a1 1 0 00.2-.9l-.2-.82a1 1 0 01.52-1.12l.73-.4a1 1 0 00.56-.68l.16-.84a1 1 0 011-.8l.86-.06a1 1 0 00.8-.4l.58-.62a1 1 0 011.4-.06z" clip-rule="evenodd"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- ===== Settings Panel ===== -->
+    <div class="settings-overlay" id="settingsOverlay" role="dialog" aria-label="设置面板" aria-hidden="true">
+      <div class="settings-panel">
+        <div class="settings-handle"></div>
+        <div class="settings-title">设置</div>
+
+        <div class="setting-item">
+          <div>
+            <div class="setting-label">语音播报</div>
+            <div class="setting-desc">识别完成后自动语音播报结果</div>
+          </div>
+          <button class="toggle on" id="toggleVoice" role="switch" aria-checked="true" aria-label="语音播报开关" tabindex="0"></button>
+        </div>
+
+        <div class="setting-item">
+          <div>
+            <div class="setting-label">振动反馈</div>
+            <div class="setting-desc">识别时提供振动提示</div>
+          </div>
+          <button class="toggle on" id="toggleVibrate" role="switch" aria-checked="true" aria-label="振动反馈开关" tabindex="0"></button>
+        </div>
+
+        <div class="setting-item">
+          <div>
+            <div class="setting-label">自动识别</div>
+            <div class="setting-desc">持续按住时自动重复识别</div>
+          </div>
+          <button class="toggle" id="toggleAuto" role="switch" aria-checked="false" aria-label="自动识别开关" tabindex="0"></button>
+        </div>
+
+        <div class="setting-item" style="border:none;">
+          <div>
+            <div class="setting-label">关于</div>
+            <div class="setting-desc">绿灯行 v1.0.0</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Home Indicator -->
+    <div class="home-indicator"></div>
+  </div>
+</div>
+
+<script>
+(function() {
+  'use strict';
+
+  // ===== State =====
+  const state = {
+    isOnboard: true,
+    isPressed: false,
+    isScanning: false,
+    scanTimer: null,
+    keyboardResetTimer: null,   // [FIX #1] 键盘延迟重置定时器引用
+    voiceEnabled: true,
+    vibrateEnabled: true,
+    autoEnabled: false,
+    autoTimer: null,
+    autoLoopCount: 0,           // [FIX #9] 自动识别循环计数
+    lastResult: null,           // [FIX #2] 防止快速重复触发
+    touchDebounce: false,       // [FIX #2] touchstart防抖标记
+  };
+
+  // ===== Constants =====
+  var MAX_AUTO_LOOPS = 10;      // [FIX #9] 自动识别最大循环次数
+  var KEYBOARD_RESET_DELAY = 3000; // 键盘松开后延迟重置时间
+
+  // ===== DOM Elements =====
+  var onboardPage = document.getElementById('onboardPage');
+  var mainPage = document.getElementById('mainPage');
+  var startBtn = document.getElementById('startBtn');
+  var mainBtn = document.getElementById('mainBtn');
+  var btnWrapper = document.getElementById('btnWrapper');
+  var statusText = document.getElementById('statusText');
+  var statusSub = document.getElementById('statusSub');
+  var settingsBtn = document.getElementById('settingsBtn');
+  var settingsOverlay = document.getElementById('settingsOverlay');
+  var toggleVoice = document.getElementById('toggleVoice');
+  var toggleVibrate = document.getElementById('toggleVibrate');
+  var toggleAuto = document.getElementById('toggleAuto');
+
+  // ===== Navigation =====
+  startBtn.addEventListener('click', function() {
+    onboardPage.classList.add('hidden');
+    mainPage.classList.remove('hidden');
+    state.isOnboard = false;
+    setTimeout(function() { mainBtn.focus(); }, 500);
+  });
+
+  // ===== Main Button Interaction =====
+  function startScan() {
+    if (state.isScanning) return;
+    // [FIX #2] 防抖：防止touchstart在结果展示瞬间再次触发
+    if (state.touchDebounce) return;
+
+    // Clear any existing timers to prevent conflicts
+    clearTimeout(state.scanTimer);
+    clearTimeout(state.autoTimer);
+    clearTimeout(state.keyboardResetTimer);
+
+    state.isPressed = true;
+    state.isScanning = true;
+    state.touchDebounce = true;
+
+    btnWrapper.classList.add('pressing', 'scanning');
+    btnWrapper.classList.remove('result-green', 'result-red', 'result-yellow', 'result-gray');
+    mainBtn.textContent = '识别中...';
+    statusText.textContent = '正在识别...';
+    statusSub.textContent = '请保持手机对准红绿灯';
+
+    // Vibrate
+    if (state.vibrateEnabled && navigator.vibrate) {
+      navigator.vibrate(50);
+    }
+
+    // [FIX #8/#11] 播报"正在识别"
+    if (state.voiceEnabled) {
+      speak('正在识别');
+    }
+
+    // Simulate recognition delay (1-2 seconds)
+    var delay = 1000 + Math.random() * 1000;
+    state.scanTimer = setTimeout(function() {
+      finishScan();
+    }, delay);
+  }
+
+  function finishScan() {
+    if (!state.isPressed) return;
+
+    // [FIX #11] 模拟置信度：80%概率高置信度，20%概率低置信度
+    var isHighConfidence = Math.random() < 0.8;
+
+    var rand = Math.random();
+    var result;
+    if (!isHighConfidence) {
+      // 低置信度：直接返回gray（无法确认）
+      result = 'gray';
+    } else {
+      // 高置信度：按权重分配红/绿/黄
+      if (rand < 0.45) result = 'green';
+      else if (rand < 0.75) result = 'red';
+      else result = 'yellow';
+    }
+
+    showResult(result, isHighConfidence);
+  }
+
+  function showResult(result, isHighConfidence) {
+    state.isScanning = false;
+    state.touchDebounce = false;
+    btnWrapper.classList.remove('pressing', 'scanning');
+
+    var configs = {
+      green: {
+        btnText: '可以通行',
+        statusText: '绿灯 - 可以通行',
+        statusSub: '前方绿灯，请安全通过',
+        speech: '绿灯，可以通行',
+        vibrate: [100, 50, 100],
+      },
+      red: {
+        btnText: '请等待',
+        statusText: '红灯 - 请等待',
+        statusSub: '前方红灯，请耐心等待',
+        speech: '红灯，请等待',
+        vibrate: [200],
+      },
+      yellow: {
+        btnText: '请注意',
+        statusText: '黄灯 - 请注意',
+        statusSub: '即将变灯，请注意安全',
+        speech: '黄灯，请注意',
+        vibrate: [100, 50, 100, 50, 100],
+      },
+      gray: {
+        btnText: '无法确认',
+        statusText: '无法确认信号',
+        statusSub: isHighConfidence ? '请调整角度后重试' : '信号不清晰，建议确认后通过',
+        speech: isHighConfidence ? '无法确认，请小心通过' : '信号不清晰，请确认后通过',
+        vibrate: [50, 50, 50, 50, 50],
+      },
+    };
+
+    var config = configs[result];
+    state.lastResult = result;
+    btnWrapper.classList.add('result-' + result);
+    mainBtn.textContent = config.btnText;
+    statusText.textContent = config.statusText;
+    statusSub.textContent = config.statusSub;
+
+    // Vibrate
+    if (state.vibrateEnabled && navigator.vibrate) {
+      navigator.vibrate(config.vibrate);
+    }
+
+    // Speech
+    if (state.voiceEnabled) {
+      speak(config.speech);
+    }
+
+    // Auto-repeat with loop limit
+    if (state.autoEnabled && state.isPressed) {
+      state.autoLoopCount++;
+      if (state.autoLoopCount >= MAX_AUTO_LOOPS) {
+        // [FIX #9] 达到最大循环次数，停止自动识别
+        if (state.voiceEnabled) {
+          setTimeout(function() { speak('已达到最大识别次数'); }, 1500);
+        }
+        return;
+      }
+      state.autoTimer = setTimeout(function() {
+        if (state.isPressed) {
+          btnWrapper.classList.remove('result-green', 'result-red', 'result-yellow', 'result-gray');
+          startScan();
+        }
+      }, 3000);
+    }
+  }
+
+  function resetButton() {
+    state.isPressed = false;
+    state.isScanning = false;
+    state.touchDebounce = false;
+    state.autoLoopCount = 0;  // [FIX #9] 重置循环计数
+
+    clearTimeout(state.scanTimer);
+    clearTimeout(state.autoTimer);
+    clearTimeout(state.keyboardResetTimer);  // [FIX #1] 清除键盘延迟定时器
+
+    btnWrapper.classList.remove('pressing', 'scanning', 'result-green', 'result-red', 'result-yellow', 'result-gray');
+    mainBtn.textContent = '按住识别';
+    statusText.textContent = '准备就绪';
+    statusSub.textContent = '按住按钮开始识别';
+
+    // Stop vibration
+    if (navigator.vibrate) {
+      navigator.vibrate(0);
+    }
+  }
+
+  // Touch events
+  mainBtn.addEventListener('touchstart', function(e) {
+    e.preventDefault();
+    startScan();
+  }, { passive: false });
+
+  mainBtn.addEventListener('touchend', function(e) {
+    e.preventDefault();
+    resetButton();
+  }, { passive: false });
+
+  mainBtn.addEventListener('touchcancel', function(e) {
+    resetButton();
+  });
+
+  // Mouse events
+  mainBtn.addEventListener('mousedown', function(e) {
+    e.preventDefault();
+    startScan();
+  });
+
+  mainBtn.addEventListener('mouseup', function(e) {
+    resetButton();
+  });
+
+  mainBtn.addEventListener('mouseleave', function(e) {
+    if (state.isPressed) resetButton();
+  });
+
+  // Keyboard support (press to start, release to reset after delay)
+  mainBtn.addEventListener('keydown', function(e) {
+    if ((e.key === ' ' || e.key === 'Enter') && !state.isPressed) {
+      e.preventDefault();
+      startScan();
+    }
+  });
+
+  mainBtn.addEventListener('keyup', function(e) {
+    if (e.key === ' ' || e.key === 'Enter') {
+      e.preventDefault();
+      if (state.isScanning) {
+        // Still scanning, cancel it
+        resetButton();
+      } else if (state.isPressed) {
+        // [FIX #1] Result already shown, auto-reset after delay with tracked timer
+        clearTimeout(state.keyboardResetTimer);
+        state.keyboardResetTimer = setTimeout(function() { resetButton(); }, KEYBOARD_RESET_DELAY);
+      }
+    }
+  });
+
+  // ===== Speech Synthesis =====
+  var voicesLoaded = false;
+
+  function loadVoices() {
+    if ('speechSynthesis' in window) {
+      var voices = window.speechSynthesis.getVoices();
+      if (voices.length > 0) voicesLoaded = true;
+    }
+  }
+
+  if ('speechSynthesis' in window) {
+    loadVoices();
+    window.speechSynthesis.onvoiceschanged = function() {
+      loadVoices();
+    };
+  }
+
+  function speak(text) {
+    if (!('speechSynthesis' in window)) return;
+
+    window.speechSynthesis.cancel();
+
+    var utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'zh-CN';
+    utterance.rate = 0.9;
+    utterance.pitch = 1.0;
+    utterance.volume = 1.0;
+
+    var trySetVoice = function() {
+      var voices = window.speechSynthesis.getVoices();
+      var zhVoice = voices.find(function(v) { return v.lang.startsWith('zh'); });
+      if (zhVoice) {
+        utterance.voice = zhVoice;
+        window.speechSynthesis.speak(utterance);
+      } else if (!voicesLoaded) {
+        setTimeout(function() {
+          voicesLoaded = true;
+          var retryVoices = window.speechSynthesis.getVoices();
+          var retryZhVoice = retryVoices.find(function(v) { return v.lang.startsWith('zh'); });
+          if (retryZhVoice) utterance.voice = retryZhVoice;
+          window.speechSynthesis.speak(utterance);
+        }, 200);
+      } else {
+        window.speechSynthesis.speak(utterance);
+      }
+    };
+
+    trySetVoice();
+  }
+
+  // ===== Settings =====
+  settingsBtn.addEventListener('click', function() {
+    settingsOverlay.classList.add('show');
+    settingsOverlay.setAttribute('aria-hidden', 'false');
+    // Focus first toggle for keyboard accessibility
+    setTimeout(function() { toggleVoice.focus(); }, 350);
+  });
+
+  function closeSettings() {
+    settingsOverlay.classList.remove('show');
+    settingsOverlay.setAttribute('aria-hidden', 'true');
+    settingsBtn.focus();
+  }
+
+  settingsOverlay.addEventListener('click', function(e) {
+    if (e.target === settingsOverlay) {
+      closeSettings();
+    }
+  });
+
+  // [FIX #10] Escape key closes settings panel
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && settingsOverlay.classList.contains('show')) {
+      closeSettings();
+    }
+  });
+
+  function setupToggle(btn, key) {
+    btn.addEventListener('click', function() {
+      state[key] = !state[key];
+      btn.classList.toggle('on', state[key]);
+      btn.setAttribute('aria-checked', state[key] ? 'true' : 'false');
+    });
+  }
+
+  setupToggle(toggleVoice, 'voiceEnabled');
+  setupToggle(toggleVibrate, 'vibrateEnabled');
+  setupToggle(toggleAuto, 'autoEnabled');
+
+  // ===== Prevent context menu on long press =====
+  document.addEventListener('contextmenu', function(e) {
+    if (e.target === mainBtn || btnWrapper.contains(e.target)) {
+      e.preventDefault();
+    }
+  });
+
+  // ===== Prevent scrolling when pressing button =====
+  document.body.addEventListener('touchmove', function(e) {
+    if (state.isPressed) {
+      e.preventDefault();
+    }
+  }, { passive: false });
+
+})();
+</script>
+
+</body>
+</html>
